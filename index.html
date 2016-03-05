@@ -11,8 +11,7 @@
 // world.sendMessage(target, message);
 // world.attack();
 // world.retreat();
-// world.info.index
-// world.info.canAttack
+// world.info.{index,canAttack,numberOfGenerals}
 
 general = {
     onMessage: function(source, message) {
@@ -26,6 +25,8 @@ general = {
     },
 };
 
+var target = Math.floor(Math.random()*world.info.numberOfGenerals);
+world.sendMessage(target, 'hello from ' + world.info.index);
 world.log('my index is: ' + world.info.index);
 </textarea>
 <br>

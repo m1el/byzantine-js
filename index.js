@@ -1,47 +1,93 @@
 var NUMBER_OF_GENERALS = 15;
 var MAX_TICKS = 1000;
 
-function sendMessenger(source, message) {
-    if (!message || typeof message.target !== 'number'
-        || isNaN(message.target)
-        || message.target < 0 || message.target >= NUMBER_OF_GENERALS) {
-        throw new Error('invalid target');
-    }
-
-    var target = Math.floor(message.target);
-    return {
-        hours: 2,
-        source: source,
-        target: target,
-        message: message,
-    };
-}
-
-function processMessengers(state) {
-    state.messengers = state.messengers.filter(function(messenger) {
-        messenger.hour -= 1;
-        if (messenger.hour > 0) {
-            return true;
-        }
-        if (!state.generals[messenger.target]) {
-            return false;
-        }
-        state.generals[messenger.target].postMessage(
-           ['message', messenger.source, messenger.message]);
-        return false;
-    });
-}
-
-function run() {
-    var code = codeArea.value;
-    var state = {
+var World = function(code) {
+    Object.assign(this, {
         tick: 0,
         generals: [],
         messengers: [],
         actions: {},
+        terminated: false,
+    });
+
+    this.bound = {
+        messageListener: this.messageListener.bind(this),
+        tickFn: this.tickFn.bind(this),
     };
 
-    state.messageListener = function(event) {
+    for (var i = 0; i < NUMBER_OF_GENERALS; i++) {
+        this.generals.push(this.makeGeneral(code, i));
+    }
+};
+
+World.prototype = {
+    makeGeneral: function(code, index) {
+        var worker = new Worker('./worker.js');
+        var canAttack = Math.random() > 0.5;
+        worker.postMessage(['setInfo', {
+            index: index,
+            canAttack: canAttack,
+           numberOfGenerals: NUMBER_OF_GENERALS,
+        }]);
+        worker.canAttack = canAttack;
+        worker.index = index;
+        worker.addEventListener('message', this.bound.messageListener);
+        worker.postMessage(['eval', code]);
+        return worker;
+    },
+
+    makeMessenger: function (source, target, message) {
+        if (typeof target !== 'number'
+            || isNaN(target) || target < 0 || target >= NUMBER_OF_GENERALS) {
+            throw new Error('invalid target');
+        }
+
+        var target = Math.floor(target);
+        return {
+            hours: 2,
+            source: source,
+            target: target,
+            message: message,
+        };
+    },
+
+    processMessengers: function() {
+        this.messengers = this.messengers.filter(function(messenger) {
+            messenger.hour -= 1;
+            if (messenger.hour > 0) {
+                return true;
+            }
+            if (!this.generals[messenger.target]) {
+                return false;
+            }
+            this.generals[messenger.target].postMessage(
+               ['message', messenger.source, messenger.message]);
+            return false;
+        }, this);
+    },
+
+    tickFn: function () {
+        if (this.tick > MAX_TICKS) {
+            this.terminate();
+            console.log('some generals took too long to make a decision');
+            console.log(this.actions);
+        }
+
+        this.processMessengers();
+        var activeGenerals = this.generals.filter(function(g) { return g; });
+        if (activeGenerals.length === 0) {
+            this.terminate();
+            console.log('all generals made a decision');
+            console.log(this.actions);
+        }
+
+        activeGenerals.forEach(function(worker) {
+            worker.postMessage(['hour', this.tick]);
+        }, this);
+        this.tick += 1;
+    },
+
+    messageListener: function(event) {
         var message = event.data;
         var index = event.target.index;
         switch (message[0]) {
@@ -50,59 +96,52 @@ function run() {
             } break;
 
             case 'message': {
-                state.messengers.push(makeMessenger(index, message));
+                this.messengers.push(this.makeMessenger(index, message[1], message[2]));
             } break;
 
             case 'attack':
             case 'retreat': {
-                state.actions[index] = message[0];
-                state.generals[index].removeEventListener(
-                   'message', state.messageListener);
-                state.generals[index].terminate();
-                state.generals[index] = null;
+                if (!this.generals[index]) {
+                    break;
+                }
+                var general = this.generals[index];
+                this.actions[index] = {
+                    decision: message[0],
+                    tick: this.tick,
+                    canAttack: general.canAttack,
+                };
+                general.removeEventListener(
+                   'message', this.bound.messageListener);
+                general.terminate();
+                this.generals[index] = null;
             } break;
         }
-    };
+    },
 
-    state.terminate = function () {
-        state.generals.forEach(function(g) {
+    run: function() {
+        this.timerId = setInterval(this.bound.tickFn, 1000);
+    },
+
+    terminate: function () {
+        if (this.terminated) {
+            return;
+        }
+        this.generals.forEach(function(g) {
             g && g.terminate();
-        });
-        clearInterval(state.timerId);
-    };
+        }, this);
+        clearInterval(this.timerId);
+        this.terminated = true;
+    },
+};
 
-    state.tickFn = function () {
-        if (state.tick > MAX_TICKS) {
-            state.terminate();
-            console.log('some generals took too long to make a decision');
-            console.log(state.actions);
-        }
+var currentWorld = null;
 
-        processMessengers(state);
-        var activeGenerals = state.generals.filter(function(g) { return g; });
-        if (activeGenerals.length === 0) {
-            state.terminate();
-            console.log('all generals made a decision');
-            console.log(state.actions);
-        }
-
-        activeGenerals.forEach(function(worker) {
-            worker.postMessage(['hour', state.tick]);
-        });
-        state.tick += 1;
-    };
-
-    for (var i = 0; i < NUMBER_OF_GENERALS; i++) {
-        var worker = new Worker('./worker.js');
-        var canAttack = Math.random() > 0.5;
-        worker.postMessage(['setInfo', {index: i, canAttack: canAttack}]);
-        worker.index = i;
-        worker.addEventListener('message', state.messageListener);
-        worker.postMessage(['eval', code]);
-        state.generals.push(worker);
+function run() {
+    if (currentWorld) {
+        currentWorld.terminate();
     }
-
-    state.timerId = setInterval(state.tickFn, 1000);
+    currentWorld = new World(codeArea.value);
+    currentWorld.run();
 }
 
 var runBtn;
