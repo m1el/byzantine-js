@@ -1,54 +1,50 @@
 var world = {
     log: function(message) {
-        postMessage({
-            kind: 'log',
-            message: message,
-        });
+        postMessage(['log', message]);
     },
     sendMessage: function(target, message) {
-        postMessage({
-            kind: 'message',
-            target: target,
-            message: message,
-        });
+        postMessage(['message', target, message]);
     },
     attack: function() {
-        postMessage({kind: 'attack'});
+        postMessage(['attack']);
     },
     retreat: function() {
-        postMessage({kind: 'retreat'});
+        postMessage(['retreat']);
     },
 };
 
-addEventListener('message', function(event) {
+var general;
+
+function defaultListener (event) {
     var message = event.data;
-    switch (message.kind) {
+    switch (message[0]) {
         case 'eval': {
-            eval(message.code);
+            eval(message[1]);
         } break;
 
-        case 'setIndex': {
-            world.myIndex = message.index;
+        case 'setInfo': {
+            world.info = message[1];
         } break;
 
         case 'hour': {
-            if (typeof general === 'undefined' || typeof general.onHourPassed !== 'function') {
+            if (!general || typeof general.onHourPassed !== 'function') {
                 world.log('general did not define onHourPassed');
             } else {
-                general.onHourPassed();
+                general.onHourPassed(message[1]);
             }
         } break;
 
         case 'message': {
-            if (typeof general === 'undefined' || typeof general.onMessage !== 'function') {
+            if (!general || typeof general.onMessage !== 'function') {
                 world.log('general did not define message');
             } else {
-                general.onMessage(message);
+                general.onMessage(message[1], message[2]);
             }
         } break;
 
         default: {
-            world.log('unknown message kind: ' + message.kind);
+            world.log('unknown message kind: ' + message[0]);
         }
     }
-});
+}
+addEventListener('message', defaultListener);

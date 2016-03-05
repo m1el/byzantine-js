@@ -11,18 +11,22 @@
 // world.sendMessage(target, message);
 // world.attack();
 // world.retreat();
-// world.myIndex
+// world.info.index
+// world.info.canAttack
 
-var general = {
-    onMessage: function(message) {
+general = {
+    onMessage: function(source, message) {
         world.log('I\'ve got a message!');
     },
-    onHourPassed: function() {
-        world.log('An hour has passed.');
+    onHourPassed: function(hour) {
+        world.log('An hour has passed. ' + hour);
+        if (hour === 2) {
+            world.attack();
+        }
     },
 };
 
-world.log('my index is: ' + world.myIndex);
+world.log('my index is: ' + world.info.index);
 </textarea>
 <br>
 <button id="run">run</button>
