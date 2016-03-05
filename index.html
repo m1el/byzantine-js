@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Byzantine Generals Problem</title>
+    <script src="index.js"></script>
+</head>
+<body>
+<textarea id="code" cols="80" rows="40">
+// world.log(message);
+// world.sendMessage(target, message);
+// world.attack();
+// world.retreat();
+// world.myIndex
+
+var general = {
+    onMessage: function(message) {
+        world.log('I\'ve got a message!');
+    },
+    onHourPassed: function() {
+        world.log('An hour has passed.');
+    },
+};
+
+world.log('my index is: ' + world.myIndex);
+</textarea>
+<br>
+<button id="run">run</button>
+</body>
+</html>
