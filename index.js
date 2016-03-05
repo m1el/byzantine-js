@@ -1,10 +1,6 @@
 var NUMBER_OF_GENERALS = 15;
 var MAX_TICKS = 1000;
 
-function startGeneral(code, index) {
-    return worker;
-}
-
 function sendMessenger(source, message) {
     if (!message || typeof message.target !== 'number'
         || isNaN(message.target)
