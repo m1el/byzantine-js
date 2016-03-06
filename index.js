@@ -1,9 +1,11 @@
 var NUMBER_OF_GENERALS = 15;
+var REQUIRED_GENERALS = 8;
 var MAX_TICKS = 1000;
 
 var World = function(code) {
     Object.assign(this, {
         tick: 0,
+        messengersSent: 0,
         generals: [],
         messengers: [],
         actions: {},
@@ -27,7 +29,7 @@ World.prototype = {
         worker.postMessage(['setInfo', {
             index: index,
             canAttack: canAttack,
-           numberOfGenerals: NUMBER_OF_GENERALS,
+            numberOfGenerals: NUMBER_OF_GENERALS,
         }]);
         worker.canAttack = canAttack;
         worker.index = index;
@@ -70,7 +72,6 @@ World.prototype = {
         if (this.tick > MAX_TICKS) {
             this.terminate();
             console.log('some generals took too long to make a decision');
-            console.log(this.actions);
         }
 
         this.processMessengers();
@@ -78,7 +79,6 @@ World.prototype = {
         if (activeGenerals.length === 0) {
             this.terminate();
             console.log('all generals made a decision');
-            console.log(this.actions);
         }
 
         activeGenerals.forEach(function(worker) {
@@ -96,6 +96,7 @@ World.prototype = {
             } break;
 
             case 'message': {
+                this.messengersSent ++;
                 this.messengers.push(this.makeMessenger(index, message[1], message[2]));
             } break;
 
@@ -106,7 +107,7 @@ World.prototype = {
                 }
                 var general = this.generals[index];
                 this.actions[index] = {
-                    decision: message[0],
+                    action: message[0],
                     tick: this.tick,
                     canAttack: general.canAttack,
                 };
@@ -127,10 +128,71 @@ World.prototype = {
             return;
         }
         this.generals.forEach(function(g) {
-            g && g.terminate();
+            if (g) {
+                this.actions[g.index] = {
+                    action: 'timeout',
+                    tick: this.tick,
+                    canAttack: g.canAttack,
+                };
+                g.terminate();
+            }
         }, this);
         clearInterval(this.timerId);
         this.terminated = true;
+        if (typeof this.onEnd === 'function') {
+            this.onEnd();
+        }
+    },
+
+    generateSummary: function() {
+        var actions = Object.keys(this.actions)
+            .map(function(k) {return this.actions[k];}, this);
+        var viable = actions.reduce(function(a, b) {
+            return a + (b.canAttack ? 1 : 0);
+        }, 0);
+        var categories = [0, 0, 0, 0];
+        actions.forEach(function(a) {
+            categories[(a.canAttack ? 1: 0) + (a.action === 'attack' ? 2 : 0)] ++;
+        });
+        categories = {
+            goodRetreat: categories[0],
+            badRetreat: categories[1],
+            badAttack: categories[2],
+            goodAttack: categories[3],
+        };
+        var summary = [];
+        if (viable >= REQUIRED_GENERALS) {
+            summary.push('generals had enough resources to attack');
+        } else {
+            summary.push('generals did not have enough resources to attack');
+        }
+
+        if (categories.goodAttack >= REQUIRED_GENERALS) {
+            categories.goodAttack += categories.badAttack;
+            categories.badAttack = 0;
+            categories.badRetreat += categories.goodRetreat;
+            categories.goodRetreat = 0;
+            summary.push(categories.goodAttack + ' generals successfully attacked');
+        } else {
+            categories.badAttack += categories.goodAttack;
+            categories.goodAttack = 0;
+            categories.goodRetreat += categories.badRetreat;
+            categories.badRetreat = 0;
+        }
+
+        if (categories.badAttack > 0) {
+            summary.push(categories.badAttack + ' generals attacked in vain')
+        }
+        if (categories.badRetreat > 0) {
+            summary.push(categories.badRetreat + ' generals retreated cowardly');
+        }
+        if (categories.goodRetreat > 0) {
+            summary.push(categories.goodRetreat + ' generals retreated wisely');
+        }
+        if (this.messengersSent > 0) {
+            summary.push(this.messengersSent + ' messengers sent');
+        }
+        return summary.join('\n');
     },
 };
 
@@ -141,6 +203,9 @@ function run() {
         currentWorld.terminate();
     }
     currentWorld = new World(codeArea.value);
+    currentWorld.onEnd = function() {
+        console.log(currentWorld.generateSummary());
+    };
     currentWorld.run();
 }
 
