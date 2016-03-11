@@ -1,0 +1,16 @@
+body {
+    max-width: 800px;
+    margin: auto;
+}
+#code {
+    width: 790px;
+    max-width: 790px;
+}
+#run {
+    color: #fff;
+    background-color: #337ab7;
+    border: 1px solid #337ab7;
+    font-size: 1.5em;
+    border-radius: 4px;
+    padding: 4px 12px;
+}
