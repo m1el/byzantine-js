@@ -2,14 +2,22 @@ var NUMBER_OF_GENERALS = 15;
 var REQUIRED_GENERALS = 8;
 var MAX_TICKS = 1000;
 
-var World = function(code) {
+var World = function(config) {
+    config = Object.assign({
+        code: '',
+        messengerSuccessRate: 1,
+        messengersPerTick: Infinity,
+    }, config);
+
     Object.assign(this, {
+        config: config,
         tick: 0,
         messengersSent: 0,
         generals: [],
         messengers: [],
         actions: {},
         terminated: false,
+        recentMessengersSent: {},
     });
 
     this.bound = {
@@ -18,12 +26,12 @@ var World = function(code) {
     };
 
     for (var i = 0; i < NUMBER_OF_GENERALS; i++) {
-        this.generals.push(this.makeGeneral(code, i));
+        this.generals.push(this.makeGeneral(i));
     }
 };
 
 World.prototype = {
-    makeGeneral: function(code, index) {
+    makeGeneral: function(index) {
         var worker = new Worker('./worker.js');
         var canAttack = Math.random() > 0.5;
         worker.postMessage(['setInfo', {
@@ -34,7 +42,7 @@ World.prototype = {
         worker.canAttack = canAttack;
         worker.index = index;
         worker.addEventListener('message', this.bound.messageListener);
-        worker.postMessage(['eval', code]);
+        worker.postMessage(['eval', this.config.code]);
         return worker;
     },
 
@@ -45,6 +53,7 @@ World.prototype = {
         }
 
         var target = Math.floor(target);
+
         return {
             hours: 2,
             source: source,
@@ -62,6 +71,9 @@ World.prototype = {
             if (!this.generals[messenger.target]) {
                 return false;
             }
+            if (messenger.successRate < Math.random()) {
+                return false;
+            }
             this.generals[messenger.target].postMessage(
                ['message', messenger.source, messenger.message]);
             return false;
@@ -75,6 +87,7 @@ World.prototype = {
         }
 
         this.processMessengers();
+        this.messengersSent = {};
         var activeGenerals = this.generals.filter(function(g) { return g; });
         if (activeGenerals.length === 0) {
             this.terminate();
@@ -97,6 +110,12 @@ World.prototype = {
 
             case 'message': {
                 this.messengersSent ++;
+                var srcSent = this.recentMessengersSent[index] || 0;
+                if (srcSent >= this.config.messengersPerTick) {
+                    return;
+                }
+                this.recentMessengersSent[index] = srcSent + 1;
+
                 this.messengers.push(this.makeMessenger(index, message[1], message[2]));
             } break;
 
@@ -152,7 +171,9 @@ World.prototype = {
         }, 0);
         var categories = [0, 0, 0, 0];
         actions.forEach(function(a) {
-            categories[(a.canAttack ? 1: 0) + (a.action === 'attack' ? 2 : 0)] ++;
+            if (a.action === 'attack' || a.action === 'retreat') {
+                categories[(a.canAttack ? 1: 0) + (a.action === 'attack' ? 2 : 0)] ++;
+            }
         });
         categories = {
             goodRetreat: categories[0],
@@ -202,7 +223,7 @@ function run() {
     if (currentWorld) {
         currentWorld.terminate();
     }
-    currentWorld = new World(codeArea.value);
+    currentWorld = new World({code: codeArea.value});
     currentWorld.onEnd = function() {
         console.log(currentWorld.generateSummary());
     };
