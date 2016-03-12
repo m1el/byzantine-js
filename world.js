@@ -4,12 +4,14 @@ var MAX_TICKS = 1000;
 
 var World = function(config) {
     config = Object.assign({
+        log: function() {},
         code: '',
         messengerSuccessRate: 1,
         messengersPerTick: Infinity,
     }, config);
 
     Object.assign(this, {
+        log: config.log,
         config: config,
         tick: 0,
         messengersSent: 0,
@@ -47,12 +49,12 @@ World.prototype = {
     },
 
     makeMessenger: function (source, target, message) {
-        if (typeof target !== 'number'
-            || isNaN(target) || target < 0 || target >= NUMBER_OF_GENERALS) {
+        if (typeof target !== 'number' ||
+            isNaN(target) || target < 0 || target >= NUMBER_OF_GENERALS) {
             throw new Error('invalid target');
         }
 
-        var target = Math.floor(target);
+        target = Math.floor(target);
 
         return {
             hours: 2,
@@ -83,7 +85,7 @@ World.prototype = {
     tickFn: function () {
         if (this.tick > MAX_TICKS) {
             this.terminate();
-            console.log('some generals took too long to make a decision');
+            this.log('some generals took too long to make a decision');
         }
 
         this.processMessengers();
@@ -91,7 +93,7 @@ World.prototype = {
         var activeGenerals = this.generals.filter(function(g) { return g; });
         if (activeGenerals.length === 0) {
             this.terminate();
-            console.log('all generals made a decision');
+            this.log('all generals made a decision');
         }
 
         activeGenerals.forEach(function(worker) {
@@ -105,7 +107,7 @@ World.prototype = {
         var index = event.target.index;
         switch (message[0]) {
             case 'log': {
-                console.log('general#' + index + ':', message[1]);
+                this.log('general#' + index + ':', message[1]);
             } break;
 
             case 'message': {
@@ -159,7 +161,7 @@ World.prototype = {
         clearInterval(this.timerId);
         this.terminated = true;
         if (typeof this.onEnd === 'function') {
-            this.onEnd();
+            this.onEnd(this);
         }
     },
 
@@ -202,7 +204,7 @@ World.prototype = {
         }
 
         if (categories.badAttack > 0) {
-            summary.push(categories.badAttack + ' generals attacked in vain')
+            summary.push(categories.badAttack + ' generals attacked in vain');
         }
         if (categories.badRetreat > 0) {
             summary.push(categories.badRetreat + ' generals retreated cowardly');

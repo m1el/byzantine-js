@@ -1,3 +1,4 @@
+/* jshint worker:true */
 var world = {
     log: function(message) {
         postMessage(['log', message]);

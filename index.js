@@ -1,12 +1,17 @@
+/* jshint browser:true */
+/* globals World, console */
 var currentWorld = null;
 
 function run() {
     if (currentWorld) {
         currentWorld.terminate();
     }
-    currentWorld = new World({code: codeArea.value});
-    currentWorld.onEnd = function() {
-        console.log(currentWorld.generateSummary());
+    currentWorld = new World({
+        code: codeArea.value,
+        log: console.log.bind(console),
+    });
+    currentWorld.onEnd = function(world) {
+        console.log(world.generateSummary());
     };
     currentWorld.run();
 }
