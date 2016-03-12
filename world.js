@@ -188,12 +188,16 @@ World.prototype = {
             if (a.action === 'retreat') {
                 categories[(a.canAttack ? 1: 0)] += 1;
             }
+            if (a.action === 'timeout') {
+                categories[4] += 1;
+            }
         });
         categories = {
             goodRetreat: categories[0],
             badRetreat: categories[1],
             badAttack: categories[2],
             goodAttack: categories[3],
+            timeout: categories[4],
         };
 
         if (this.config.hasCoward && categories.goodAttack > 0) {
@@ -229,6 +233,9 @@ World.prototype = {
         }
         if (categories.goodRetreat > 0) {
             summary.push(categories.goodRetreat + ' generals retreated wisely');
+        }
+        if (categories.timeout > 0) {
+            summary.push(categories.timeout + ' generals timed out');
         }
         if (this.messengersSent > 0) {
             summary.push(this.messengersSent + ' messengers sent');
