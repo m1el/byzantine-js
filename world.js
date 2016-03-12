@@ -4,6 +4,7 @@ var MAX_TICKS = 100;
 
 var World = function(config) {
     config = Object.assign({
+        tickDuration: 200,
         log: function() {},
         code: '',
         duplicationRate: 0,
@@ -149,7 +150,7 @@ World.prototype = {
     },
 
     run: function() {
-        this.timerId = setInterval(this.bound.tickFn, 1000);
+        this.timerId = setInterval(this.bound.tickFn, this.config.tickDuration);
     },
 
     terminate: function () {
