@@ -63,6 +63,27 @@ var query = {
     },
 };
 
+function throttle(fn, interval) {
+    var fwd = [1, 2, 2];
+    var bwd = [0, 0, 1];
+    var state = 0;
+    var relax = function() {
+        if (state === 2) {
+            fn();
+            setTimeout(relax, interval);
+        }
+        state = bwd[state];
+    };
+
+    return function() {
+        if (state === 0) {
+            fn();
+            setTimeout(relax, interval);
+        }
+        state = fwd[state];
+    };
+}
+
 var levelName = query.parse(location.search).level;
 if (!levels.hasOwnProperty(levelName)) {
     levelName = 'nice';
@@ -81,4 +102,9 @@ document.addEventListener('DOMContentLoaded', function () {
     runBtn.addEventListener('click', run);
     var levelDesc = document.getElementById('desc-' + levelName);
     levelDesc.classList.add('current');
+
+    var autoSave = throttle(function() {
+        localStorage.byzantineCode = codeArea.value;
+    }, 300);
+    codeArea.addEventListener('input', autoSave);
 });
