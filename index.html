@@ -2,13 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Byzantine Generals Problem</title>
+    <title>Byzantine generals problem</title>
     <link rel="stylesheet" href="style.css">
     <script src="world.js"></script>
     <script src="index.js"></script>
 </head>
 <body>
-<textarea id="code" cols="80" rows="40">
+<ul class="level-links">
+    <li><a href="./rules.html">Rules</a></li>
+    <li><a href="?level=nice">Level 0: Nice world</a></li>
+    <li><a href="?level=limitMessages">Level 1: Limited couriers</a></li>
+    <li><a href="?level=dropMessages">Level 2: Faulty couriers</a></li>
+    <li><a href="?level=simultaneous">Level 3: Coordinated attack</a></li>
+    <li><a href="?level=harsh">Level 4: Harsh world</a></li>
+</ul>
+<div class="level-description" id="desc-nice">
+    <h1>Nice world</h1>
+    <ul>
+        <li>Unlimited messengers per hour</li>
+        <li>Messengers always deliver messages</li>
+    </ul>
+</div>
+<div class="level-description" id="desc-limitMessages">
+    <h1>Limited couriers</h1>
+    <ul>
+        <li>One messenger per "hour"</li>
+        <li>Messengers always deliver messages</li>
+    </ul>
+</div>
+<div class="level-description" id="desc-dropMessages">
+    <h1>Faulty couriers</h1>
+    <ul>
+        <li>One messenger per "hour"</li>
+        <li>Messengers die with 50% probability</li>
+    </ul>
+</div>
+<div class="level-description" id="desc-simultaneous">
+    <h1>Coordinated attack</h1>
+    <ul>
+        <li>One messenger per "hour"</li>
+        <li>Messengers die with 50% probability</li>
+        <li>Generals have to attack at the same time</li>
+    </ul>
+</div>
+<div class="level-description" id="desc-harsh">
+    <h1>Harsh world</h1>
+    <ul>
+        <li>One messenger per "hour"</li>
+        <li>Messengers die with 50% probability</li>
+        <li>Messengers duplicate messages with 20% probability</li>
+        <li>Generals have to attack at the same time</li>
+        <li>One of the generals is a coward, and will retreat</li>
+    </ul>
+</div>
+
+<textarea id="code">
 // world.log(message);
 // world.sendMessage(target, message);
 // world.attack();
@@ -17,7 +65,7 @@
 
 general = {
     onMessage: function(source, message) {
-        world.log('I\'ve got a message!');
+        world.log('I’ve got a message!');
     },
     onHourPassed: function(hour) {
         world.log('An hour has passed. ' + hour);

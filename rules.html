@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Byzantine generals: rules</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Byzantine generals, a programming game</h1>
+<p>This is a programming game inspired by a well-known problem in distributed systems, <a href="https://en.wikipedia.org/wiki/Byzantine_fault_tolerance">Byzantine fault tolerance</a>.</p>
+<p>To play this game, you are expected to write an algorithm for the generals to follow in order to make a collective decision.</p>
+<p>The rules are:</p>
+<ul class="rules">
+    <li>Several generals are trying to siege a fortress.</li>
+    <li>Some generals have resources to attack, and some don't.</li>
+    <li>Iff at least half of the generals have resources to attack and decide to attack, the attack will succeed.</li>
+    <li>A general can check if he has resources to attack by looking at <code>world.info.canAttack</code>.</li>
+    <li>A general can send a messenger to it's fellow general using <code>world.sendMessage(targetGeneral, message)</code>.
+        Messages are not corrupted.</li>
+    <li><code>general.onMessage(sourceGeneral, message)</code> will be called when messenger delivers a message.</li>
+    <li><code>general.onHourPassed(hour)</code> will be called every game hour.</li>
+    <li>A general can choose to attack or retreat using <code>world.attack()</code> or <code>world.retreat()</code>.</li>
+    <li>Once a general made this choice, no more actions are allowed for him.</li>
+</ul>
+<p><a href="./?level=nice">Start playing</a></p>
+</body>
+</html>

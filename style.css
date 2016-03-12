@@ -1,10 +1,15 @@
 body {
+    font-family: Verdana;
+    line-height: 1.5;
+    font-size: 1.2em;
     max-width: 800px;
     margin: auto;
 }
 #code {
     width: 790px;
     max-width: 790px;
+    height: 500px;
+    font-size: 1.2em;
 }
 #run {
     color: #fff;
@@ -13,4 +18,31 @@ body {
     font-size: 1.5em;
     border-radius: 4px;
     padding: 4px 12px;
+}
+h1 {
+    font-size: 1.5em;
+    margin-top: 0.5em;
+    margin-bottom: 0;
+}
+code {
+    border: 1px solid #ddd;
+    padding: 3px;
+    border-radius: 4px;
+}
+.level-links {
+    padding: 0;
+    line-height: 1.2;
+}
+.level-links li {
+    list-style: none;
+    margin-bottom: 0;
+}
+ul {
+    margin: 0 0 0.5em 0;
+}
+.level-description {
+    display: none;
+}
+.level-description.current {
+    display: block;
 }

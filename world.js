@@ -1,11 +1,12 @@
-var NUMBER_OF_GENERALS = 15;
-var REQUIRED_GENERALS = 8;
+var NUMBER_OF_GENERALS = 16;
+var REQUIRED_GENERALS = Math.floor(NUMBER_OF_GENERALS / 2);
 var MAX_TICKS = 1000;
 
 var World = function(config) {
     config = Object.assign({
         log: function() {},
         code: '',
+        duplicationRate: 0,
         messengerSuccessRate: 1,
         messengersPerTick: Infinity,
     }, config);
@@ -78,6 +79,12 @@ World.prototype = {
             }
             this.generals[messenger.target].postMessage(
                ['message', messenger.source, messenger.message]);
+
+            if (Math.random() < this.config.duplicationRate) {
+                this.generals[messenger.target].postMessage(
+                   ['message', messenger.source, messenger.message]);
+            }
+
             return false;
         }, this);
     },
