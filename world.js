@@ -83,6 +83,7 @@ World.prototype = {
 
         return {
             hours: 2,
+            successRate: this.config.messengerSuccessRate,
             source: source,
             target: target,
             message: message,
