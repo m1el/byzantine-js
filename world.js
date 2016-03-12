@@ -240,6 +240,15 @@ World.prototype = {
         if (this.messengersSent > 0) {
             summary.push(this.messengersSent + ' messengers sent');
         }
-        return summary.join('\n');
+        var success = false;
+        if (viable >= REQUIRED_GENERALS) {
+            success = categories.goodAttack >= REQUIRED_GENERALS;
+        } else {
+            success = categories.badAttack === 0;
+        }
+        return {
+            success: success,
+            text: summary.join('\n'),
+        };
     },
 };

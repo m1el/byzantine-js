@@ -35,7 +35,8 @@ function run() {
     }, level);
     currentWorld = new World(config);
     currentWorld.onEnd = function(world) {
-        console.log(world.generateSummary());
+        var summary = world.generateSummary();
+        console.log(summary.text);
     };
     currentWorld.run();
 }
