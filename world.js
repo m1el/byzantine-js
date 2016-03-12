@@ -1,12 +1,13 @@
 var NUMBER_OF_GENERALS = 16;
 var REQUIRED_GENERALS = Math.floor(NUMBER_OF_GENERALS / 2);
-var MAX_TICKS = 1000;
+var MAX_TICKS = 100;
 
 var World = function(config) {
     config = Object.assign({
         log: function() {},
         code: '',
         duplicationRate: 0,
+        hasCoward: false,
         messengerSuccessRate: 1,
         messengersPerTick: Infinity,
     }, config);
@@ -180,8 +181,11 @@ World.prototype = {
         }, 0);
         var categories = [0, 0, 0, 0];
         actions.forEach(function(a) {
-            if (a.action === 'attack' || a.action === 'retreat') {
-                categories[(a.canAttack ? 1: 0) + (a.action === 'attack' ? 2 : 0)] ++;
+            if (a.action === 'attack') {
+                categories[(a.canAttack ? 1: 0) + 2] += 1;
+            }
+            if (a.action === 'retreat') {
+                categories[(a.canAttack ? 1: 0)] += 1;
             }
         });
         categories = {
@@ -190,6 +194,12 @@ World.prototype = {
             badAttack: categories[2],
             goodAttack: categories[3],
         };
+
+        if (this.config.hasCoward && categories.goodAttack > 0) {
+            categories.goodAttack -= 1;
+            categories.badRetreat += 1;
+        }
+
         var summary = [];
         if (viable >= REQUIRED_GENERALS) {
             summary.push('generals had enough resources to attack');
