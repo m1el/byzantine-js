@@ -89,7 +89,7 @@ var levelName = query.parse(location.search).level;
 if (!levels.hasOwnProperty(levelName)) {
     levelName = 'nice';
 }
-level = levels[level];
+level = levels[levelName];
 
 var runBtn, codeArea, levelSelect;
 document.addEventListener('DOMContentLoaded', function () {
