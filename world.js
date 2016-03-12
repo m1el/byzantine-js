@@ -2,6 +2,28 @@ var NUMBER_OF_GENERALS = 16;
 var REQUIRED_GENERALS = Math.floor(NUMBER_OF_GENERALS / 2);
 var MAX_TICKS = 100;
 
+function group(array, fn) {
+    var result = [];
+    var tmp = [];
+    var last;
+
+    array.forEach(function(el) {
+        if (!tmp.length || fn(last, el)) {
+            tmp.push(el);
+            last = el;
+        } else {
+            result.push(tmp);
+            tmp = [];
+        }
+    });
+
+    if (tmp.length) {
+        result.push(tmp);
+    }
+
+    return result;
+}
+
 var World = function(config) {
     config = Object.assign({
         tickDuration: 200,
@@ -20,7 +42,7 @@ var World = function(config) {
         messengersSent: 0,
         generals: [],
         messengers: [],
-        actions: {},
+        actions: [],
         terminated: false,
         recentMessengersSent: {},
     });
@@ -136,11 +158,12 @@ World.prototype = {
                     break;
                 }
                 var general = this.generals[index];
-                this.actions[index] = {
+                this.actions.push({
+                    index: index,
                     action: message[0],
                     tick: this.tick,
                     canAttack: general.canAttack,
-                };
+                });
                 general.removeEventListener(
                    'message', this.bound.messageListener);
                 general.terminate();
@@ -159,11 +182,12 @@ World.prototype = {
         }
         this.generals.forEach(function(g) {
             if (g) {
-                this.actions[g.index] = {
+                this.actions.push({
+                    index: g.index,
                     action: 'timeout',
                     tick: this.tick,
                     canAttack: g.canAttack,
-                };
+                });
                 g.terminate();
             }
         }, this);
@@ -174,9 +198,7 @@ World.prototype = {
         }
     },
 
-    generateSummary: function() {
-        var actions = Object.keys(this.actions)
-            .map(function(k) {return this.actions[k];}, this);
+    categorizeActions: function(actions) {
         var viable = actions.reduce(function(a, b) {
             return a + (b.canAttack ? 1 : 0);
         }, 0);
@@ -192,37 +214,62 @@ World.prototype = {
                 categories[4] += 1;
             }
         });
-        categories = {
+        return {
+            viable: viable,
             goodRetreat: categories[0],
             badRetreat: categories[1],
             badAttack: categories[2],
             goodAttack: categories[3],
             timeout: categories[4],
         };
+    },
+
+    generateSummary: function() {
+        var actions = this.actions;
+        var categories = this.categorizeActions(actions);
 
         if (this.config.hasCoward && categories.goodAttack > 0) {
+            categories.viable -= 1;
             categories.goodAttack -= 1;
             categories.badRetreat += 1;
         }
 
+        if (this.config.simultaneous) {
+            var good = false
+            group(actions, function(a, b) {
+                return a.tick === b.tick;
+            }).forEach(function(acts) {
+                var cats = this.categorizeActions(acts);
+                if (!good && cats.goodAttack >= REQUIRED_GENERALS) {
+                    good = true;
+                } else if (!good) {
+                    categories.badAttack += cats.goodAttack;
+                    categories.goodAttack -= cats.goodAttack;
+                    categories.badRetreat -= cats.badRetreat;
+                    categories.goodRetreat += cats.goodRetreat;
+                } else {
+                    categories.badAttack -= cats.badAttack;
+                    categories.goodAttack += cats.badAttack;
+                }
+            }, this);
+        }
+
         var summary = [];
-        if (viable >= REQUIRED_GENERALS) {
+        if (categories.viable >= REQUIRED_GENERALS) {
             summary.push('generals had enough resources to attack');
         } else {
             summary.push('generals did not have enough resources to attack');
+            categories.goodRetreat += categories.badRetreat;
+            categories.badRetreat = 0;
         }
 
         if (categories.goodAttack >= REQUIRED_GENERALS) {
             categories.goodAttack += categories.badAttack;
             categories.badAttack = 0;
-            categories.badRetreat += categories.goodRetreat;
-            categories.goodRetreat = 0;
             summary.push(categories.goodAttack + ' generals successfully attacked');
         } else {
             categories.badAttack += categories.goodAttack;
             categories.goodAttack = 0;
-            categories.goodRetreat += categories.badRetreat;
-            categories.badRetreat = 0;
         }
 
         if (categories.badAttack > 0) {
@@ -241,7 +288,7 @@ World.prototype = {
             summary.push(this.messengersSent + ' messengers sent');
         }
         var success = false;
-        if (viable >= REQUIRED_GENERALS) {
+        if (categories.viable >= REQUIRED_GENERALS) {
             success = categories.goodAttack >= REQUIRED_GENERALS;
         } else {
             success = categories.badAttack === 0;
